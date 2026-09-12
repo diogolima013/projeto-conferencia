@@ -22,3 +22,17 @@ async function preencherViaOmie(ean){
     }
   }
 }
+
+// Busca o pedido inteiro na Omie (número + itens esperados), pra conferência.
+async function buscarPedidoNaOmie(numeroPedido){
+  try{
+    const resp = await fetch('/.netlify/functions/buscar-pedido?numero=' + encodeURIComponent(numeroPedido));
+    const data = await resp.json();
+    if(!resp.ok){
+      return { erro: data.erro || 'Erro ao buscar pedido na Omie.' };
+    }
+    return data;
+  } catch(e){
+    return { erro: 'Sem conexão com o servidor.' };
+  }
+}

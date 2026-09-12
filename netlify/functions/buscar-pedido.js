@@ -1,107 +1,137 @@
 // netlify/functions/buscar-pedido.js
 //
 // Busca um Pedido de Venda no Omie pelo número do pedido, e retorna
-// uma lista simplificada de itens (código, descrição, quantidade)
+// uma lista de itens já com o código de barras (EAN) de cada produto,
 // para o app comparar com o que foi bipado na conferência.
 //
 // Chamada esperada pelo front-end:
 //   GET /.netlify/functions/buscar-pedido?numero=12345
 
-const OMIE_URL = "https://app.omie.com.br/api/v1/produtos/pedido/";
+const OMIE_URL_PEDIDO = 'https://app.omie.com.br/api/v1/produtos/pedido/';
+const OMIE_URL_PRODUTOS = 'https://app.omie.com.br/api/v1/geral/produtos/';
 
-exports.handler = async (event) => {
-  const numeroPedido = event.queryStringParameters && event.queryStringParameters.numero;
+exports.handler = async function (event) {
+  const numeroPedido = (event.queryStringParameters && event.queryStringParameters.numero || '').trim();
 
   if (!numeroPedido) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ erro: "Informe o número do pedido (?numero=...)." }),
-    };
+    return resposta(400, { erro: 'Informe o parâmetro "numero".' });
   }
 
   const appKey = process.env.OMIE_APP_KEY;
   const appSecret = process.env.OMIE_APP_SECRET;
 
   if (!appKey || !appSecret) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ erro: "Credenciais da Omie não configuradas no servidor." }),
-    };
+    return resposta(500, { erro: 'OMIE_APP_KEY / OMIE_APP_SECRET não configuradas no ambiente do Netlify.' });
   }
 
   try {
-    // A API ListarPedidos do Omie não tem um filtro direto por número de
-    // pedido — ela só retorna tudo, paginado. Então percorremos as páginas
-    // até achar o pedido com o numero_pedido procurado.
-    let pedido = null;
-    let pagina = 1;
-    const MAX_PAGINAS = 20; // limite de segurança para não rodar pra sempre
-
-    while (!pedido && pagina <= MAX_PAGINAS) {
-      const listarResp = await fetch(OMIE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          call: "ListarPedidos",
-          app_key: appKey,
-          app_secret: appSecret,
-          param: [
-            {
-              pagina,
-              registros_por_pagina: 100,
-              apenas_importado_api: "N",
-            },
-          ],
-        }),
-      });
-
-      const listarData = await listarResp.json();
-
-      if (listarData.faultstring) {
-        return {
-          statusCode: 502,
-          body: JSON.stringify({ erro: "Erro na Omie: " + listarData.faultstring }),
-        };
-      }
-
-      const pedidos = listarData.pedido_venda_produto || [];
-
-      pedido = pedidos.find(
-        (p) => String(p.cabecalho.numero_pedido) === String(numeroPedido)
-      );
-
-      const totalPaginas = listarData.total_de_paginas || 1;
-      if (pagina >= totalPaginas) break;
-      pagina++;
-    }
+    const pedido = await buscarPedidoPorNumero(numeroPedido, appKey, appSecret);
 
     if (!pedido) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ erro: "Nenhum pedido encontrado com esse número." }),
-      };
+      return resposta(404, { erro: 'Nenhum pedido encontrado com esse número.' });
     }
 
-    // 2) Monta a resposta simplificada com os itens do pedido.
-    const itens = (pedido.det || []).map((item) => ({
-      codigo: item.produto.codigo_produto,
-      descricao: item.produto.descricao,
-      quantidade: item.produto.quantidade,
-      unidade: item.produto.unidade,
-    }));
+    // O pedido traz o "codigo_produto" (código interno da Omie) de cada item,
+    // mas o leitor de código de barras bipa o EAN. Então buscamos o catálogo
+    // de produtos e montamos um mapa codigo_produto -> ean/descrição.
+    const mapaProdutos = await buscarMapaDeProdutos(appKey, appSecret);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        numero_pedido: pedido.cabecalho.numero_pedido,
-        cliente_codigo: pedido.cabecalho.codigo_cliente,
-        itens,
-      }),
-    };
+    const itens = (pedido.det || []).map((item) => {
+      const codigoProduto = item.produto.codigo_produto;
+      const produtoCompleto = mapaProdutos[codigoProduto];
+      return {
+        codigo_produto: codigoProduto,
+        descricao: item.produto.descricao,
+        quantidade: item.produto.quantidade,
+        unidade: item.produto.unidade,
+        ean: (produtoCompleto && produtoCompleto.ean) || '',
+      };
+    });
+
+    return resposta(200, {
+      numero_pedido: pedido.cabecalho.numero_pedido,
+      cliente_codigo: pedido.cabecalho.codigo_cliente,
+      itens,
+    });
   } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ erro: "Falha ao consultar a Omie: " + err.message }),
-    };
+    return resposta(502, { erro: 'Falha ao consultar a Omie.', detalhe: String(err) });
   }
 };
+
+// Percorre as páginas de ListarPedidos até achar o pedido com esse número
+// (a API da Omie não tem um filtro direto por número de pedido).
+async function buscarPedidoPorNumero(numeroPedido, appKey, appSecret) {
+  const MAX_PAGINAS = 20;
+  let pagina = 1;
+  let totalPaginas = 1;
+
+  while (pagina <= totalPaginas && pagina <= MAX_PAGINAS) {
+    const resp = await fetch(OMIE_URL_PEDIDO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        call: 'ListarPedidos',
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [{ pagina, registros_por_pagina: 100, apenas_importado_api: 'N' }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.faultstring) throw new Error(data.faultstring);
+
+    const pedidos = data.pedido_venda_produto || [];
+    const encontrado = pedidos.find(
+      (p) => String(p.cabecalho.numero_pedido) === String(numeroPedido)
+    );
+    if (encontrado) return encontrado;
+
+    totalPaginas = data.total_de_paginas || 1;
+    pagina += 1;
+  }
+
+  return null;
+}
+
+// Busca todo o catálogo de produtos e monta um mapa por codigo_produto,
+// para descobrir o EAN de cada item do pedido.
+async function buscarMapaDeProdutos(appKey, appSecret) {
+  const mapa = {};
+  const MAX_PAGINAS = 20;
+  let pagina = 1;
+  let totalPaginas = 1;
+
+  while (pagina <= totalPaginas && pagina <= MAX_PAGINAS) {
+    const resp = await fetch(OMIE_URL_PRODUTOS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        call: 'ListarProdutosResumido',
+        app_key: appKey,
+        app_secret: appSecret,
+        param: [{ pagina, registros_por_pagina: 200, apenas_importado_api: 'N' }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.faultstring) throw new Error(data.faultstring);
+
+    const lista = data.produto_servico_resumido || data.produtos || [];
+    lista.forEach((p) => {
+      mapa[p.codigo_produto] = p;
+    });
+
+    totalPaginas = data.total_de_paginas || 1;
+    pagina += 1;
+  }
+
+  return mapa;
+}
+
+function resposta(statusCode, body) {
+  return {
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}

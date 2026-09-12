@@ -1,7 +1,13 @@
 // Ponto de entrada: liga os listeners dos campos de cabeçalho e do leitor físico
 // de código de barras, e faz a primeira renderização da tela.
-
 document.getElementById('orderRef').addEventListener('input', render);
+
+document.getElementById('orderRef').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    carregarPedidoDaOmie(this.value.trim());
+  }
+});
 document.getElementById('notaFiscal').addEventListener('input', render);
 
 let scanTimer = null;

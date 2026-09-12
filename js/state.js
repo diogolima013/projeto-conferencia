@@ -111,3 +111,33 @@ function escapeHtml(str){
   d.textContent = str;
   return d.innerHTML;
 }
+// Carrega os itens esperados de um pedido direto da Omie, substituindo
+// a lista atual (com confirmação, se já houver itens na tela).
+async function carregarPedidoDaOmie(numeroPedido){
+  if(!numeroPedido) return;
+
+  if(items.length && !confirm('Isso vai substituir os itens atuais pelos do pedido ' + numeroPedido + ' na Omie. Continuar?')){
+    return;
+  }
+
+  showScanFeedback('Buscando pedido ' + numeroPedido + ' na Omie...', 'ok');
+
+  const resultado = await buscarPedidoNaOmie(numeroPedido);
+
+  if(resultado.erro){
+    showScanFeedback('⚠ ' + resultado.erro, 'error');
+    return;
+  }
+
+  items = resultado.itens.map(function(item){
+    return {
+      name: item.descricao,
+      expected: item.quantidade,
+      counted: 0,
+      barcode: item.ean || ''
+    };
+  });
+
+  showScanFeedback('✓ Pedido ' + numeroPedido + ' carregado (' + items.length + ' itens)', 'ok');
+  render();
+}
