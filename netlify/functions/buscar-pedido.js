@@ -32,21 +32,23 @@ exports.handler = async function (event) {
     }
 
     // O pedido traz o "codigo_produto" (código interno da Omie) de cada item,
-    // mas o leitor de código de barras bipa o EAN. Então buscamos o catálogo
-    // de produtos e montamos um mapa codigo_produto -> ean/descrição.
-    const mapaProdutos = await buscarMapaDeProdutos(appKey, appSecret);
+    // mas o leitor de código de barras bipa o EAN. Então consultamos, em
+    // paralelo, só os produtos que aparecem nesse pedido (bem mais rápido
+    // do que baixar o catálogo inteiro).
+    const detalhes = pedido.det || [];
+    const eans = await Promise.all(
+      detalhes.map((item) =>
+        consultarEanDoProduto(item.produto.codigo_produto, appKey, appSecret)
+      )
+    );
 
-    const itens = (pedido.det || []).map((item) => {
-      const codigoProduto = item.produto.codigo_produto;
-      const produtoCompleto = mapaProdutos[codigoProduto];
-      return {
-        codigo_produto: codigoProduto,
-        descricao: item.produto.descricao,
-        quantidade: item.produto.quantidade,
-        unidade: item.produto.unidade,
-        ean: (produtoCompleto && produtoCompleto.ean) || '',
-      };
-    });
+    const itens = detalhes.map((item, i) => ({
+      codigo_produto: item.produto.codigo_produto,
+      descricao: item.produto.descricao,
+      quantidade: item.produto.quantidade,
+      unidade: item.produto.unidade,
+      ean: eans[i] || '',
+    }));
 
     return resposta(200, {
       numero_pedido: pedido.cabecalho.numero_pedido,
@@ -93,39 +95,28 @@ async function buscarPedidoPorNumero(numeroPedido, appKey, appSecret) {
   return null;
 }
 
-// Busca todo o catálogo de produtos e monta um mapa por codigo_produto,
-// para descobrir o EAN de cada item do pedido.
-async function buscarMapaDeProdutos(appKey, appSecret) {
-  const mapa = {};
-  const MAX_PAGINAS = 20;
-  let pagina = 1;
-  let totalPaginas = 1;
-
-  while (pagina <= totalPaginas && pagina <= MAX_PAGINAS) {
+// Consulta um único produto pelo codigo_produto e retorna o EAN dele.
+// Se der qualquer erro, retorna string vazia em vez de travar tudo
+// (o item continua aparecendo no app, só sem código de barras).
+async function consultarEanDoProduto(codigoProduto, appKey, appSecret) {
+  try {
     const resp = await fetch(OMIE_URL_PRODUTOS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        call: 'ListarProdutosResumido',
+        call: 'ConsultarProduto',
         app_key: appKey,
         app_secret: appSecret,
-        param: [{ pagina, registros_por_pagina: 200, apenas_importado_api: 'N' }],
+        param: [{ codigo_produto: codigoProduto }],
       }),
     });
 
     const data = await resp.json();
-    if (data.faultstring) throw new Error(data.faultstring);
-
-    const lista = data.produto_servico_resumido || data.produtos || [];
-    lista.forEach((p) => {
-      mapa[p.codigo_produto] = p;
-    });
-
-    totalPaginas = data.total_de_paginas || 1;
-    pagina += 1;
+    if (data.faultstring) return '';
+    return data.ean || '';
+  } catch (e) {
+    return '';
   }
-
-  return mapa;
 }
 
 function resposta(statusCode, body) {
