@@ -8,6 +8,54 @@ function toggleShippingCard(show){
   document.getElementById('shippingCard').style.display = show ? 'block' : 'none';
 }
 
+// Preenche o card "dados para etiqueta" com o que veio da Omie
+// (destinatário, transportadora, volumes, peso). Só preenche um campo
+// se ele ainda estiver vazio, pra não sobrescrever algo que o usuário
+// já tenha digitado/ajustado na tela.
+function preencherFormularioEnvio(resultado){
+  if(!resultado) return;
+
+  preencherSeVazio('qtyVolumes', resultado.quantidade_volumes);
+  preencherSeVazio('totalWeight', resultado.peso_total);
+
+  if(resultado.destinatario){
+    preencherSeVazio('destNome', resultado.destinatario.nome);
+    preencherSeVazio('destRua', resultado.destinatario.rua);
+    preencherSeVazio('destBairro', resultado.destinatario.bairro);
+    preencherSeVazio('destCidade', resultado.destinatario.cidade);
+    preencherSeVazio('destCep', resultado.destinatario.cep);
+    preencherSeVazio('destEstado', resultado.destinatario.estado);
+  }
+
+  if(resultado.transportadora){
+    preencherSeVazio('transpNome', resultado.transportadora.nome);
+    preencherSeVazio('transpRua', resultado.transportadora.rua);
+    preencherSeVazio('transpBairro', resultado.transportadora.bairro);
+    preencherSeVazio('transpCidade', resultado.transportadora.cidade);
+    preencherSeVazio('transpCep', resultado.transportadora.cep);
+    preencherSeVazio('transpEstado', resultado.transportadora.estado);
+  }
+}
+
+function preencherSeVazio(id, valor){
+  if(valor === undefined || valor === null || valor === '') return;
+  const el = document.getElementById(id);
+  if(el && !el.value.trim()){
+    el.value = valor;
+  }
+}
+
+function limparFormularioEnvio(){
+  ['qtyVolumes', 'totalWeight', 'destNome', 'destRua', 'destBairro', 'destCidade',
+   'destCep', 'destEstado', 'transpNome', 'transpRua', 'transpBairro',
+   'transpCidade', 'transpCep', 'transpEstado'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.value = (id === 'qtyVolumes') ? 1 : '';
+  });
+  document.getElementById('labelPreviewArea').innerHTML = '';
+  document.getElementById('printArea').innerHTML = '';
+}
+
 function generateLabels(){
   const orderRef = document.getElementById('orderRef').value.trim() || '(sem número)';
   const notaFiscal = document.getElementById('notaFiscal').value.trim();

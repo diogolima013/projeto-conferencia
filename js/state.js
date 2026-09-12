@@ -34,6 +34,7 @@ function resetAll(){
   document.getElementById('notaFiscal').value = '';
   document.getElementById('scanInput').value = '';
   document.getElementById('scanFeedback').textContent = '';
+  limparFormularioEnvio();
   render();
 }
 
@@ -111,8 +112,11 @@ function escapeHtml(str){
   d.textContent = str;
   return d.innerHTML;
 }
+
 // Carrega os itens esperados de um pedido direto da Omie, substituindo
-// a lista atual (com confirmação, se já houver itens na tela).
+// a lista atual (com confirmação, se já houver itens na tela). Também
+// já deixa o formulário de etiqueta pré-preenchido com destinatário,
+// transportadora, volumes e peso vindos do pedido.
 async function carregarPedidoDaOmie(numeroPedido){
   if(!numeroPedido) return;
 
@@ -137,6 +141,10 @@ async function carregarPedidoDaOmie(numeroPedido){
       barcode: item.ean || ''
     };
   });
+
+  // Pré-preenche o card de etiqueta com o que veio da Omie.
+  // O usuário ainda pode ajustar/completar antes de gerar as etiquetas.
+  preencherFormularioEnvio(resultado);
 
   showScanFeedback('✓ Pedido ' + numeroPedido + ' carregado (' + items.length + ' itens)', 'ok');
   render();
