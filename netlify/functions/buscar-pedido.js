@@ -86,7 +86,7 @@ exports.handler = async function (event) {
       transportadora: formatarEndereco(transportadora),
       // Deixe isso comentado normalmente; descomente se precisar depurar
       // nomes de campo reais que a Omie está devolvendo nesse pedido:
-      // _debug_frete: frete,
+      _debug_frete: frete,
     });
   } catch (err) {
     return resposta(502, { erro: 'Falha ao consultar a Omie.', detalhe: String(err) });
