@@ -38,3 +38,13 @@ document.getElementById('itemBarcode').addEventListener('keydown', function(e){
     document.getElementById('itemQty').focus();
   }
 });
+
+// função para buscar o pedido pelo mobile
+function buscarPeloBotao(){
+  const numero = document.getElementById('orderRef').value.trim();
+  if(!numero){
+    alert('Digite o número do pedido primeiro.');
+    return;
+  }
+  carregarPedidoDaOmie(numero);
+}

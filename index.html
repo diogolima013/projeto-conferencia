@@ -13,7 +13,10 @@
 
 <div class="card" id="setupCard">
   <label for="orderRef">Nº do pedido / Cliente</label>
-  <input type="text" id="orderRef" placeholder="Ex: Pedido 4821 - Cliente XPTO">
+<div style="display:flex; gap:8px;">
+  <input type="text" id="orderRef" placeholder="Ex: Pedido 4821 - Cliente XPTO" style="flex:1;">
+  <button type="button" onclick="buscarPeloBotao()" style="background:var(--accent); color:#fff; padding:0 16px; border-radius:8px; font-size:1.2rem;">🔍</button>
+</div>
 
   <label for="notaFiscal" style="margin-top:10px;">Nº da Nota Fiscal</label>
   <input type="text" id="notaFiscal" placeholder="Ex: NF 000123">
