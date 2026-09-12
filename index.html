@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferência de Expedição</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<h1>Conferência de Expedição</h1>
+<div class="sub">Marque item por item conforme separa — evita pedido sair incompleto.</div>
+
+<div class="card" id="setupCard">
+  <label for="orderRef">Nº do pedido / Cliente</label>
+  <input type="text" id="orderRef" placeholder="Ex: Pedido 4821 - Cliente XPTO">
+
+  <label for="notaFiscal" style="margin-top:10px;">Nº da Nota Fiscal</label>
+  <input type="text" id="notaFiscal" placeholder="Ex: NF 000123">
+
+  <div class="row" style="margin-top:10px;">
+    <div>
+      <label for="itemName">Produto</label>
+      <input type="text" id="itemName" placeholder="Nome do item">
+    </div>
+    <div style="max-width:90px;">
+      <label for="itemQty">Qtd.</label>
+      <input type="number" id="itemQty" min="1" value="1">
+    </div>
+  </div>
+  <div class="field" style="margin-top:8px;">
+    <label for="itemBarcode">Código de barras (opcional)</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="itemBarcode" placeholder="Bipe (leitor) ou toque na câmera" style="flex:1;">
+      <button type="button" onclick="scanBarcodeForNewItem()" style="background:#eceef1; color:var(--text); white-space:nowrap; padding:10px 14px;">📷</button>
+    </div>
+    <div id="addItemCameraArea" style="display:none; margin-top:8px;">
+      <video id="addItemCameraVideo" style="width:100%; border-radius:8px; background:#000;" playsinline muted></video>
+      <button class="btn-secondary" onclick="stopAddItemCameraScan()" style="margin-top:8px;">Cancelar</button>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="addItem()">+ Adicionar item ao pedido</button>
+</div>
+
+<div class="order-label" id="orderLabel" style="display:none;"></div>
+
+<div class="card" id="scanCard" style="display:none;">
+  <div class="section-title">📷 Bipar produto</div>
+  <input type="text" id="scanInput" placeholder="Clique aqui e bipe o código de barras (leitor físico)" autocomplete="off">
+  <button class="btn-secondary" id="cameraScanBtn" onclick="startCameraScan()" style="margin-top:8px;">📸 Usar câmera do celular</button>
+  <div id="scanFeedback" style="margin-top:8px; font-size:0.85rem; min-height:18px;"></div>
+
+  <div id="cameraArea" style="display:none; margin-top:10px;">
+    <video id="cameraVideo" style="width:100%; border-radius:8px; background:#000;" playsinline muted></video>
+    <button class="btn-secondary" onclick="stopCameraScan()" style="margin-top:8px;">Fechar câmera</button>
+  </div>
+</div>
+
+<div id="itemsList"></div>
+<div class="empty" id="emptyMsg">Nenhum item adicionado ainda.</div>
+
+<div class="card" id="shippingCard">
+  <div class="section-title">✓ Pedido conferido — dados para etiqueta</div>
+
+  <div class="two-col">
+    <div class="field">
+      <label for="qtyVolumes">Qtd. de volumes</label>
+      <input type="number" id="qtyVolumes" min="1" value="1" oninput="fillLabelForm()">
+    </div>
+    <div class="field">
+      <label for="totalWeight">Peso total (kg)</label>
+      <input type="number" id="totalWeight" min="0" step="0.1" placeholder="Ex: 12.5">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Destinatário</label>
+    <input type="text" id="destNome" placeholder="Nome / Razão social" style="margin-bottom:6px;">
+    <input type="text" id="destRua" placeholder="Rua e número" style="margin-bottom:6px;">
+    <div class="two-col" style="margin-bottom:6px;">
+      <input type="text" id="destBairro" placeholder="Bairro">
+      <input type="text" id="destCidade" placeholder="Cidade">
+    </div>
+    <div class="two-col">
+      <input type="text" id="destCep" placeholder="CEP">
+      <input type="text" id="destEstado" placeholder="Estado (UF)" maxlength="2">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Transportadora</label>
+    <input type="text" id="transpNome" placeholder="Nome da transportadora" style="margin-bottom:6px;">
+    <input type="text" id="transpRua" placeholder="Rua e número" style="margin-bottom:6px;">
+    <div class="two-col" style="margin-bottom:6px;">
+      <input type="text" id="transpBairro" placeholder="Bairro">
+      <input type="text" id="transpCidade" placeholder="Cidade">
+    </div>
+    <div class="two-col">
+      <input type="text" id="transpCep" placeholder="CEP">
+      <input type="text" id="transpEstado" placeholder="Estado (UF)" maxlength="2">
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="generateLabels()">Gerar e imprimir etiquetas</button>
+
+  <div id="labelPreviewArea" style="margin-top:14px;"></div>
+</div>
+
+<div class="status-bar">
+  <div class="status-text" id="statusText">Adicione os itens do pedido</div>
+  <button class="btn-secondary" onclick="resetAll()">Novo pedido / Limpar</button>
+</div>
+
+<div id="printArea"></div>
+
+<script src="js/state.js"></script>
+<script src="js/feedback.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/omie.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/labels.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
