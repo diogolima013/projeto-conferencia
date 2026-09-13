@@ -146,6 +146,6 @@ async function carregarPedidoDaOmie(numeroPedido){
   // O usuário ainda pode ajustar/completar antes de gerar as etiquetas.
   preencherFormularioEnvio(resultado);
 
-  showScanFeedback('✓ Pedido ' + numeroPedido + ' carregado (' + items.length + ' itens)', 'ok');
+  showScanFeedback('✓ PEDIDO ' + numeroPedido + '/  CARREGADO (' + items.length + ' itens)', 'ok');
   render();
 }
