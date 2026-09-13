@@ -47,7 +47,35 @@ button{
   flex-shrink:0;
 }
 .item.ok .check{background:var(--accent); border-color:var(--accent);}
-.remove-btn{background:none; color:var(--danger); font-size:0.8rem; padding:4px 6px;}
+.remove-btn{
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: var(--danger);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.remove-btn:hover{
+  background: var(--danger);
+  color: #fff;
+}
+
+.remove-btn:active{
+  transform: scale(0.92);
+}
+
+.remove-btn svg{
+  width: 16px;
+  height: 16px;
+}
 .status-bar{
   position:fixed; bottom:0; left:0; right:0; padding:14px 16px;
   background:var(--card); border-top:1px solid var(--border);
