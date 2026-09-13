@@ -56,7 +56,7 @@ function limparFormularioEnvio(){
   document.getElementById('printArea').innerHTML = '';
 }
 
-function generateLabels(){
+async function generateLabels(){
   const orderRef = document.getElementById('orderRef').value.trim() || '(sem número)';
   const qty = parseInt(document.getElementById('qtyVolumes').value) || 1;
 
@@ -74,6 +74,10 @@ function generateLabels(){
     alert('Preencha ao menos o nome do destinatário antes de gerar as etiquetas.');
     return;
   }
+
+  // Salva o histórico da conferência na planilha (não trava a impressão
+  // se der erro — só avisa no feedback).
+  await salvarHistoricoDaConferencia(orderRef, destNome);
 
   // Preview na tela
   const previewArea = document.getElementById('labelPreviewArea');
@@ -109,4 +113,32 @@ function generateLabels(){
   }
 
   window.print();
+}
+
+// Manda os itens conferidos pra function que salva na planilha do Google.
+async function salvarHistoricoDaConferencia(numeroPedido, clienteNome){
+  const conferidoPor = document.getElementById('conferidoPor').value.trim();
+
+  const payload = {
+    numero_pedido: numeroPedido,
+    cliente: clienteNome,
+    conferido_por: conferidoPor,
+    itens: items.map(function(it){
+      return { descricao: it.name, esperado: it.expected, contado: it.counted };
+    })
+  };
+
+  try{
+    const resp = await fetch('/.netlify/functions/salvar-historico', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if(!resp.ok){
+      showScanFeedback('⚠ Não foi possível salvar o histórico: ' + (data.erro || 'erro desconhecido'), 'error');
+    }
+  } catch(e){
+    showScanFeedback('⚠ Sem conexão pra salvar o histórico (etiqueta foi gerada normalmente).', 'error');
+  }
 }
