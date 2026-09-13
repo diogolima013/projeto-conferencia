@@ -46,7 +46,7 @@ exports.handler = async function (event) {
 
   try {
     const accessToken = await obterTokenDeAcesso(email, chavePrivada);
-    const agora = new Date().toLocaleString('pt-BR');
+    const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
     const linhas = itens.map((item) => [
       agora,
