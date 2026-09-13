@@ -1,5 +1,3 @@
-// netlify/functions/buscar-pedido.js
-//
 // Busca um Pedido de Venda no Omie pelo número, e retorna:
 //  - itens (com EAN, pra bipar/conferir)
 //  - dados do destinatário (cliente)

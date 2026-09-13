@@ -21,28 +21,30 @@
   <label for="notaFiscal" style="margin-top:10px;">Nº da Nota Fiscal</label>
   <input type="text" id="notaFiscal" placeholder="Ex: NF 000123">
 
-  <div class="row" style="margin-top:10px;">
-    <div>
-      <label for="itemName">Produto</label>
-      <input type="text" id="itemName" placeholder="Nome do item">
+  <div id="manualAddSection">
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label for="itemName">Produto</label>
+        <input type="text" id="itemName" placeholder="Nome do item">
+      </div>
+      <div style="max-width:90px;">
+        <label for="itemQty">Qtd.</label>
+        <input type="number" id="itemQty" min="1" value="1">
+      </div>
     </div>
-    <div style="max-width:90px;">
-      <label for="itemQty">Qtd.</label>
-      <input type="number" id="itemQty" min="1" value="1">
+    <div class="field" style="margin-top:8px;">
+      <label for="itemBarcode">Código de barras (opcional)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="itemBarcode" placeholder="Bipe (leitor) ou toque na câmera" style="flex:1;">
+        <button type="button" onclick="scanBarcodeForNewItem()" style="background:#eceef1; color:var(--text); white-space:nowrap; padding:10px 14px;">📷</button>
+      </div>
+      <div id="addItemCameraArea" style="display:none; margin-top:8px;">
+        <video id="addItemCameraVideo" style="width:100%; border-radius:8px; background:#000;" playsinline muted></video>
+        <button class="btn-secondary" onclick="stopAddItemCameraScan()" style="margin-top:8px;">Cancelar</button>
+      </div>
     </div>
+    <button class="btn-primary" onclick="addItem()">+ Adicionar item ao pedido</button>
   </div>
-  <div class="field" style="margin-top:8px;">
-    <label for="itemBarcode">Código de barras (opcional)</label>
-    <div style="display:flex; gap:8px;">
-      <input type="text" id="itemBarcode" placeholder="Bipe (leitor) ou toque na câmera" style="flex:1;">
-      <button type="button" onclick="scanBarcodeForNewItem()" style="background:#eceef1; color:var(--text); white-space:nowrap; padding:10px 14px;">📷</button>
-    </div>
-    <div id="addItemCameraArea" style="display:none; margin-top:8px;">
-      <video id="addItemCameraVideo" style="width:100%; border-radius:8px; background:#000;" playsinline muted></video>
-      <button class="btn-secondary" onclick="stopAddItemCameraScan()" style="margin-top:8px;">Cancelar</button>
-    </div>
-  </div>
-  <button class="btn-primary" onclick="addItem()">+ Adicionar item ao pedido</button>
 </div>
 
 <div class="order-label" id="orderLabel" style="display:none;"></div>
