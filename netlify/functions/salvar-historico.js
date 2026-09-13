@@ -37,7 +37,7 @@ exports.handler = async function (event) {
   }
 
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const chavePrivada = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const chavePrivada = (process.env.JSON_GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
   const sheetId = process.env.GOOGLE_SHEET_ID;
 
   if (!email || !chavePrivada || !sheetId) {
